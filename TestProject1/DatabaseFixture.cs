@@ -47,7 +47,7 @@ CREATE TABLE records (
 				        string insert = @"INSERT INTO records (id, tenant_id, name, number) values (:id, :tenant_id, :name, :number)";
 						insertCommand.CommandText = insert;
 						insertCommand.Parameters.Add(new NpgsqlParameter(":id", i));
-						insertCommand.Parameters.Add(new NpgsqlParameter(":tenant_id", i%2==0 ? 1 : 2));
+						insertCommand.Parameters.Add(new NpgsqlParameter(":tenant_id", i%3==0 ? 1 : 2));
 						insertCommand.Parameters.Add(new NpgsqlParameter(":name", $"record {i:0000}"));
 						insertCommand.Parameters.Add(new NpgsqlParameter(":number", i+1000));
 				        insertCommand.ExecuteNonQuery();
