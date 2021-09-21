@@ -43,15 +43,15 @@ namespace EfCoreGlobalQueryFilterExpressions
             // apply permission and tenant global query filter
             foreach (var queryableType in GetQueryableTypes())
             {
+                // all expressions have to target the queryable type as parameter
+                ParameterExpression entityParamExpr = Expression.Parameter(queryableType);
+                
                 // via reflection, we find the method that returns the permission filter (returning a type-targeted Expression<Func<T:queryClrType, bool>> as LambdaExpression)
                 LambdaExpression permissionLambdaExpression = GetPermissionExpression(queryableType);
 
-                // we need this later when joining the two expressions to target the same parameter, otherwise EF fails to translate the query
-                var entityParamExpr = permissionLambdaExpression.Parameters.Single();
-
-                // the tenantFilterLambdaExpression is hand crafted (not a lambda, just a binary (property-equals-constant) expression
+                // the tenantFilterLambdaExpression is hand crafted (not a lambda, just a binary (.TenantId == _tenantIdHolder.Current.Value) expression
                 var tenantIdPropExpr = Expression.Property(entityParamExpr, "TenantId");
-                var constExpr = Expression.Constant(_tenantIdHolder.Current.Value);
+                var constExpr = Expression.Property(Expression.Property(Expression.Field(Expression.Constant(this), "_tenantIdHolder"), "Current"), "Value");
                 Expression tenantFilterExpression = Expression.Equal(tenantIdPropExpr, constExpr);
 
                 // combine both to a new expression
