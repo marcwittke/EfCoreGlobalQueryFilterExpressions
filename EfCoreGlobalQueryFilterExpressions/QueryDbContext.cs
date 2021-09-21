@@ -155,7 +155,7 @@ namespace EfCoreGlobalQueryFilterExpressions
             }
 
             // fallback: arbitrary business rule
-            return rec => rec.Number > 1050;
+            return rec => rec.Name.Contains("5");
         }
     }
 }

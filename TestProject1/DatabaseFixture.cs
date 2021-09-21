@@ -1,4 +1,7 @@
+using System;
 using System.Data;
+using EfCoreGlobalQueryFilterExpressions;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace TestProject1
@@ -13,6 +16,10 @@ namespace TestProject1
 	        pgUtil.EnsureDroppedDatabase(dbName);
 	        pgUtil.CreateDatabase(dbName);
 	        ConnectionString = new NpgsqlConnectionStringBuilder(pgUtil.ConnectionString) {Database = dbName}.ConnectionString;
+	        
+	        DbContextOptions = new DbContextOptionsBuilder<QueryDbContext>()
+	                                   .UseNpgsql(ConnectionString)
+	                                   .Options;
 
 	        using (IDbConnection connection = new NpgsqlConnection(ConnectionString))
 	        {
@@ -41,7 +48,7 @@ CREATE TABLE records (
 						insertCommand.CommandText = insert;
 						insertCommand.Parameters.Add(new NpgsqlParameter(":id", i));
 						insertCommand.Parameters.Add(new NpgsqlParameter(":tenant_id", i%2==0 ? 1 : 2));
-						insertCommand.Parameters.Add(new NpgsqlParameter(":name", "record {i:0000}"));
+						insertCommand.Parameters.Add(new NpgsqlParameter(":name", $"record {i:0000}"));
 						insertCommand.Parameters.Add(new NpgsqlParameter(":number", i+1000));
 				        insertCommand.ExecuteNonQuery();
 			        }
@@ -50,5 +57,28 @@ CREATE TABLE records (
         }
 
         public string ConnectionString { get; }
+        public DbContextOptions<QueryDbContext> DbContextOptions { get; }
+        
+        public T ExecuteScalar<T>(string sql)
+        {
+	        using (IDbConnection connection = new NpgsqlConnection(ConnectionString))
+	        {
+		        connection.Open();
+
+		        using (IDbCommand createCommand = connection.CreateCommand())
+		        {
+			        createCommand.CommandText = sql;
+			        var scalar = createCommand.ExecuteScalar();
+			        if (scalar is DBNull)
+			        {
+				        return default(T);
+			        }
+			        else
+			        {
+				        return (T)scalar;
+			        }
+		        }
+	        }
+        }
     }
 }

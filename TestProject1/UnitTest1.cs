@@ -1,8 +1,9 @@
 using System.Linq;
+using System.Security.Claims;
 using Backend.Fx.Environment.Authentication;
 using Backend.Fx.Environment.MultiTenancy;
 using EfCoreGlobalQueryFilterExpressions;
-using Microsoft.EntityFrameworkCore;
+using FluentAssertions;
 using Xunit;
 
 namespace TestProject1
@@ -16,27 +17,83 @@ namespace TestProject1
             _fixture = fixture;
         }
         
-        [Fact]
-        public void Test1()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void TheSystemIdentityInSpecificTenantSeesAllRecordsForGivenTenantId(int tenantIdToCheck)
         {
-            DbContextOptions options = new DbContextOptionsBuilder<QueryDbContext>()
-                                       .UseNpgsql(_fixture.ConnectionString)
-                                       .Options;
-
-            const int tenantIdToCheck = 1;
-            
             using (var ctx = new QueryDbContext(
-                options,
+                _fixture.DbContextOptions,
                 CurrentTenantIdHolder.Create(tenantIdToCheck),
                 CurrentIdentityHolder.CreateSystem()))
             {
                 var records = ctx.Records.ToArray();
-                Assert.Equal(50, records.Length);
+                records.Length.Should().Be(50);
                 foreach (var rec in records)
                 {
-                    Assert.Equal(tenantIdToCheck, rec.TenantId);
+                    rec.TenantId.Should().Be(tenantIdToCheck);
                 }
             }
         }
+        
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void TheAnonymousIdentityInSpecificTenantSeesNoRecords(int tenantIdToCheck)
+        {
+            using (var ctx = new QueryDbContext(
+                _fixture.DbContextOptions,
+                CurrentTenantIdHolder.Create(tenantIdToCheck),
+                CurrentIdentityHolder.Create(new AnonymousIdentity())))
+            {
+                var records = ctx.Records.ToArray();
+                records.Should().BeEmpty();
+            }
+        }
+        
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void TheClaimsIdentityWithPermissionClaimInSpecificTenantSeesPermittedRecords(int tenantIdToCheck)
+        {
+            var identity = new ClaimsIdentity();
+            identity.AddClaim(new Claim("can:read:all:records", "true"));
+            using (var ctx = new QueryDbContext(
+                _fixture.DbContextOptions,
+                CurrentTenantIdHolder.Create(tenantIdToCheck),
+                CurrentIdentityHolder.Create(identity)))
+            {
+                var records = ctx.Records.ToArray();
+                records.Length.Should().Be(50);
+                foreach (var rec in records)
+                {
+                    rec.TenantId.Should().Be(tenantIdToCheck);
+                }
+            }
+        }
+        
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void TheDefaultClaimsIdentityInSpecificTenantSeesPermittedRecords(int tenantIdToCheck)
+        {
+            var expectedCount = _fixture.ExecuteScalar<long>($"SELECT count(*) FROM records WHERE name LIKE '%5%' AND tenant_id = '{tenantIdToCheck}'");
+            
+            var identity = new ClaimsIdentity();
+            using (var ctx = new QueryDbContext(
+                _fixture.DbContextOptions,
+                CurrentTenantIdHolder.Create(tenantIdToCheck),
+                CurrentIdentityHolder.Create(identity)))
+            {
+                var records = ctx.Records.ToArray();
+                records.Length.Should().Be((int)expectedCount);
+                foreach (var rec in records)
+                {
+                    rec.TenantId.Should().Be(tenantIdToCheck);
+                }
+            }
+        }
+
+        
     }
 }
