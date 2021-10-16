@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+####### git checkout
+      - name: Check out GitHub Repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 ###### git version
       - name: Setup GitVersion
         uses: gittools/actions/gitversion/setup@v0.9.9
