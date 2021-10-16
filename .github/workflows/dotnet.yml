@@ -1,0 +1,30 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: if main
+        if: github.ref == 'refs/heads/main'
+        run: echo 'we are on main'
+      
+      - name: if main
+        if: ${{ github.ref == 'refs/heads/main' && 4 > 0 }}
+        run: echo 'we are on main and 4 > 0'
+
+      - name: if main
+        if: github.ref == 'refs/heads/main' && ${{ 4 > 0 }}
+        run: echo 'we are on main and 4 > 0'
+
+      - name: if main
+        if: ${{ github.ref == 'refs/heads/main' }} && {{ 4 > 0 }}
+        run: echo 'we are on main and 4 > 0'
+                
