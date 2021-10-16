@@ -12,6 +12,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+###### git version
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.9
+        with:
+          versionSpec: '5.x'
+
+      - name: Fetch tags for GitVersion
+        run: git fetch --tags
+
+      - name: Fetch main for GitVersion
+        if: github.ref != 'refs/heads/main'
+        run: git branch --create-reflog main origin/main
+
+      - name: Pre-determine Version
+        if: github.ref == 'refs/heads/main'
+        id: gitversionpre
+        uses: gittools/actions/gitversion/execute@v0.9.9
+
+      # When we are building main, and we have new commits since the last tag, bump the patch version and tag again.
+      - name: Bump patch version
+        if: ${{ github.ref == 'refs/heads/main' && steps.gitversionpre.outputs.commitsSinceVersionSource > 0 }}
+        run: git tag ${{ steps.gitversionpre.outputs.major }}.${{ steps.gitversionpre.outputs.minor }}.${{ steps.gitversionpre.outputs.patch + 1 }}
+
+      # run 'gitversion' again to reflect the new tag, or for the first time on non-main brnaches
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.9
+        
       - name: if main
         if: github.ref == 'refs/heads/main'
         run: echo 'we are on main'
