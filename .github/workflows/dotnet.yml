@@ -46,19 +46,8 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v0.9.9
         
-      - name: if main
-        if: github.ref == 'refs/heads/main'
-        run: echo 'we are on main'
-      
-      - name: if main
-        if: ${{ github.ref == 'refs/heads/main' && 4 > 0 }}
-        run: echo 'we are on main and 4 > 0'
-
-      - name: if main
-        if: github.ref == 'refs/heads/main' && ${{ 4 > 0 }}
-        run: echo 'we are on main and 4 > 0'
-
-      - name: if main
-        if: ${{ github.ref == 'refs/heads/main' }} && {{ 4 > 0 }}
-        run: echo 'we are on main and 4 > 0'
+##### When everything succeeded, we are pushing the tag so that GitVersion picks it up on the next run
+      - name: Push tag 
+        if: ${{ success() && github.ref == 'refs/heads/main' }}
+        run: git push --tags
                 
