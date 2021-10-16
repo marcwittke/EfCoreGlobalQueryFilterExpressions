@@ -33,7 +33,7 @@ jobs:
       # When we are building main, and we have new commits since the last tag, bump the patch version and tag again.
       - name: Bump patch version
         if: ${{ github.ref == 'refs/heads/main' && steps.gitversionpre.outputs.commitsSinceVersionSource > 0 }}
-        run: git tag ${{ steps.gitversionpre.outputs.major }}.${{ steps.gitversionpre.outputs.minor }}.${{ steps.gitversionpre.outputs.patch + 1 }}
+        run: git tag ${{ steps.gitversionpre.outputs.major }}.${{ steps.gitversionpre.outputs.minor }}.$((${{ steps.gitversionpre.outputs.patch }}+1))
 
       # run 'gitversion' again to reflect the new tag, or for the first time on non-main brnaches
       - name: Determine Version
